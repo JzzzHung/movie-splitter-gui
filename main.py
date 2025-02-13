@@ -2,12 +2,13 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from view.ui import MainWindow
 from util.MovieSplitter import MovieSplitter
+from util.mplay import mPlay
 
 class Main(MainWindow):
     def __init__(self):
         super().__init__()
         self.initBtn()
-        self.initPlay()
+        self.player = mPlay(self.display)
 
     def initBtn(self):
         self.btnStart.clicked.connect(self.btnStartClicked)
@@ -15,19 +16,18 @@ class Main(MainWindow):
 
     # Splitter Thread
     def btnStartClicked(self):
+        filePathList = self.textEdit.filePathList
         frameRate = float(self.lineeditFrameRate.text())
         count = int(self.lineeditCount.text())
-        filePathList = self.textEdit.filePathList
 
         if len(filePathList) == 0:
-            self.play()
+            self.player.play()
         else:
             # @REF https://blog.csdn.net/chengmo123/article/details/96477103
-            self.ms = MovieSplitter(frameRate, count)
-            self.ms.setFilePathList(filePathList)
+            self.ms = MovieSplitter(filePathList, frameRate, count)
             self.ms.trigger.connect(self.display) # LISTENING
             self.ms.start()
-            self.counter = 0
+            self.player.resetCounter()
 
     def btnClearClicked(self):
         self.textEdit.filePathList.clear()
@@ -39,29 +39,6 @@ class Main(MainWindow):
             self.listwidgetOutput.takeItem(self.listwidgetOutput.currentRow())
         self.listwidgetOutput.addItem(msg)
         self.listwidgetOutput.scrollToBottom()
-
-    def initPlay(self):
-        self.counter = 0
-        self.playList = [
-            'There is no video to split.',
-            'There is no video to split! Please select at least one video.',
-            'NO VIDEO LA!!!',
-            '(╯°Д°)╯ ┻┻',
-            "┳┳ ╭( ' - '╭)"
-                         ]
-
-    def play(self):
-        if self.counter < 3:
-            self.display(self.playList[self.counter], 0)
-        else:
-            if self.counter % 2 != 0:
-                # @REF https://facemood.grtimed.com/classification/%E6%86%A4%E6%80%92
-                self.display(self.playList[3], 0)
-            else:
-                # @REF https://facemood.grtimed.com/classification/%E7%84%A1%E5%A5%88
-                # @REF https://www.compart.com/en/unicode/U+256D
-                self.display(self.playList[4], 0)
-        self.counter += 1
 
 
 if __name__ == "__main__":

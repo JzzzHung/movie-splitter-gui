@@ -38,7 +38,7 @@ class MovieSplitter(mThread, mFile):
             self.frameRate = round(1 / fps, 2)
         else:
             self.imgCount = 0
-            self.trigger.emit('[ERROR] frameRate error', 0)
+            # self.trigger.emit('[ERROR] frameRate error', 0)
             print('[ERROR] frameRate error')
 
     def getFrame(self, sec):
@@ -56,6 +56,12 @@ class MovieSplitter(mThread, mFile):
         return self.seconds
 
     def run(self):
+
+        # frameRate error
+        if self.imgCount == 0:
+            self.trigger.emit(f'---------- {self.fname} ----------\n[ERROR] Please set Frame Rate as positive integer or -1', 0)
+            self.trigger.emit('', 0)
+            return
 
         # emit: {video} has {imgCount} image
         self._emitTitle(self.imgCount)

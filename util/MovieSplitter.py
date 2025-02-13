@@ -1,25 +1,29 @@
 import cv2
 from util.mThread import mThread
 from util.mFile import mFile
-from util.Encoder import Encoder
-from enum import Enum
-import time
-
-class MS_Enum(Enum):
-    START = 1
-    RE_ENCODE = 2
 
 class MovieSplitter(mThread, mFile):
 
-    def __init__(self, filePathList, frameRate, count, launchType):
+    def __init__(self, filePath, frameRate, count, launchType):
+
+        # init
         super().__init__()
-        self.filePathList = filePathList
+        self.filePath = filePath
         self.frameRate = frameRate
         self.count = count
         self.COUNT = count
         self.launchType = launchType
 
-    def getImageCount(self):
+        # prepare
+        self.setFilePath(filePath)
+        self.checkDir()
+
+        # start
+        self.vidcap = cv2.VideoCapture(self.filePath)
+        self.setImageCount()
+
+
+    def setImageCount(self):
 
         # calculate
         frames = self.vidcap.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -28,14 +32,14 @@ class MovieSplitter(mThread, mFile):
 
         # check frameRate
         if self.frameRate > 0:
-            imgCount = round(self.seconds / self.frameRate)
+            self.imgCount = round(self.seconds / self.frameRate)
         elif self.frameRate == -1: # get all frame of video
-            imgCount = round(frames) - 1
+            self.imgCount = round(frames) - 1
             self.frameRate = round(1 / fps, 2)
         else:
-            imgCount = 0
+            self.imgCount = 0
+            self.trigger.emit('[ERROR] frameRate error', 0)
             print('[ERROR] frameRate error')
-        return imgCount
 
     def getFrame(self, sec):
         self.vidcap.set(cv2.CAP_PROP_POS_MSEC, sec*1000)
@@ -48,30 +52,16 @@ class MovieSplitter(mThread, mFile):
         else:
             print("<<< This Frame doesn't exist! >>>")
 
+    def getMovieDuration(self):
+        return self.seconds
+
     def run(self):
-        for f in self.filePathList:
-            self.setFilePath(f)
-            self.checkDir()
-            if self.launchType == MS_Enum.RE_ENCODE:
-                self.ec = Encoder(f)
-                self.ec.start()
-                # processing
-                self._emitProcesing()
-                self.ec.wait()
-                self.filePath = self.ec.getNewFilePath()
-            self.doSplit()
-
-    def doSplit(self):
-
-        # start
-        self.vidcap = cv2.VideoCapture(self.filePath)
-        imgCount = self.getImageCount()
 
         # emit: {video} has {imgCount} image
-        self._emitTitle(imgCount)
+        self._emitTitle(self.imgCount)
 
         sec = 0
-        for _ in range(imgCount+1):
+        for _ in range(self.imgCount + 1):
 
             # get frame
             self.getFrame(sec)
@@ -93,7 +83,7 @@ class MovieSplitter(mThread, mFile):
     # ---------- EMIT ----------
 
     def _emitTitle(self, imgCount):
-        self.trigger.emit(f'---------- {self.fname} ----------\n[{imgCount+1} image]', 0)
+        self.trigger.emit(f'---------- {self.fname} Splitting ----------\n[{imgCount+1} image]', 0)
         self.trigger.emit('', 0)
         print(f'---------- {self.fname} ----------')
         print(f'{imgCount+1} image')

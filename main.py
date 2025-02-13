@@ -1,9 +1,9 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from view.ui import MainWindow
-from util.MovieSplitter import MovieSplitter
-from util.MovieSplitter import MS_Enum
 from util.mplay import mPlay
+from util.Worker import Worker
+from util.Worker import WorkEnum
 
 class Main(MainWindow):
     def __init__(self):
@@ -18,21 +18,19 @@ class Main(MainWindow):
 
     # Splitter Thread
     def btnStartClicked(self):
-        self.launch(MS_Enum.START)
+        self.launch(WorkEnum.START)
 
     # Re-encode Thread
     def btnReencodeClicked(self):
-        self.launch(MS_Enum.RE_ENCODE)
+        self.launch(WorkEnum.RE_ENCODE)
 
     def launch(self, launchType):
         filePathList, frameRate, count = self.getParams()
         if len(filePathList) == 0:
             self.player.play()
         else:
-            # @REF https://blog.csdn.net/chengmo123/article/details/96477103
-            self.ms = MovieSplitter(filePathList, frameRate, count, launchType)
-            self.ms.trigger.connect(self.display) # LISTENING
-            self.ms.start()
+            self.wocker = Worker(filePathList, frameRate, count, launchType, self.display)
+            self.wocker.start()
             self.player.resetCounter()
 
     def getParams(self):

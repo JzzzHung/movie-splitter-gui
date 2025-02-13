@@ -6,8 +6,3 @@ class mThread(QThread):
 
     def __init__(self):
         super(mThread, self).__init__()
-
-    def __del__(self):
-        # self.wait()
-        print('Thread killed')
-        pass

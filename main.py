@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from view.ui import MainWindow
-from util.mplay import mPlay
+from util.mPlay import mPlay
 from util.Worker import Worker
 from util.Worker import WorkEnum
 

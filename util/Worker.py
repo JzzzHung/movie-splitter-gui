@@ -25,11 +25,12 @@ class Worker(mThread):
             if self.launchType == WorkEnum.RE_ENCODE:
 
                 # Start
-                self.ec = Encoder(filePath)
+                self.ec = Encoder(filePath, self.ms.getMovieDuration())
                 self.ec.trigger.connect(self.display) # LISTENING
                 self.ec.start()
 
                 # Processing
+                self.ec._emitProcessing()
                 self.ec.wait()
 
                 # Done

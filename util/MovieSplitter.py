@@ -95,15 +95,3 @@ class MovieSplitter(mThread, mFile):
     def _emitDone(self):
         self.trigger.emit(f'---------- DONE ----------\n', 0)
         print(f'\n---------- DONE ----------\n')
-
-    def _emitProcesing(self):
-        _counter = 0
-        # TODO: set range in movie duration (self.seconds)
-        for _ in range(10):
-            self.trigger.emit(f'{_counter}', 1)
-            # print(f'{_counter}')
-            if self.ec.isFinished():
-                print('----------------- FIN. -----------------')
-                break
-            _counter += 1
-            time.sleep(1)

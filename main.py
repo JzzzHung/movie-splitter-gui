@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from view.ui import MainWindow
 from util.MovieSplitter import MovieSplitter
+from util.MovieSplitter import MS_Enum
 from util.mplay import mPlay
 
 class Main(MainWindow):
@@ -13,21 +14,32 @@ class Main(MainWindow):
     def initBtn(self):
         self.btnStart.clicked.connect(self.btnStartClicked)
         self.btnClear.clicked.connect(self.btnClearClicked)
+        self.btnReencode.clicked.connect(self.btnReencodeClicked)
 
     # Splitter Thread
     def btnStartClicked(self):
-        filePathList = self.textEdit.filePathList
-        frameRate = float(self.lineeditFrameRate.text())
-        count = int(self.lineeditCount.text())
+        self.launch(MS_Enum.START)
 
+    # Re-encode Thread
+    def btnReencodeClicked(self):
+        self.launch(MS_Enum.RE_ENCODE)
+
+    def launch(self, launchType):
+        filePathList, frameRate, count = self.getParams()
         if len(filePathList) == 0:
             self.player.play()
         else:
             # @REF https://blog.csdn.net/chengmo123/article/details/96477103
-            self.ms = MovieSplitter(filePathList, frameRate, count)
+            self.ms = MovieSplitter(filePathList, frameRate, count, launchType)
             self.ms.trigger.connect(self.display) # LISTENING
             self.ms.start()
             self.player.resetCounter()
+
+    def getParams(self):
+        filePathList = self.textEdit.filePathList
+        frameRate = float(self.lineeditFrameRate.text())
+        count = int(self.lineeditCount.text())
+        return filePathList, frameRate, count
 
     def btnClearClicked(self):
         self.textEdit.filePathList.clear()

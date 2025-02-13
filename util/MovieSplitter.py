@@ -1,26 +1,34 @@
 import cv2
 from util.mThread import mThread
 from util.mFile import mFile
+from util.Encoder import Encoder
+from enum import Enum
+import time
+
+class MS_Enum(Enum):
+    START = 1
+    RE_ENCODE = 2
 
 class MovieSplitter(mThread, mFile):
 
-    def __init__(self, filePathList, frameRate, count):
+    def __init__(self, filePathList, frameRate, count, launchType):
         super().__init__()
         self.filePathList = filePathList
         self.frameRate = frameRate
         self.count = count
         self.COUNT = count
+        self.launchType = launchType
 
     def getImageCount(self):
 
         # calculate
         frames = self.vidcap.get(cv2.CAP_PROP_FRAME_COUNT)
         fps = self.vidcap.get(cv2.CAP_PROP_FPS)
-        seconds = round(frames / fps)
+        self.seconds = round(frames / fps)
 
         # check frameRate
         if self.frameRate > 0:
-            imgCount = round(seconds / self.frameRate)
+            imgCount = round(self.seconds / self.frameRate)
         elif self.frameRate == -1: # get all frame of video
             imgCount = round(frames) - 1
             self.frameRate = round(1 / fps, 2)
@@ -44,9 +52,16 @@ class MovieSplitter(mThread, mFile):
         for f in self.filePathList:
             self.setFilePath(f)
             self.checkDir()
-            self._do()
+            if self.launchType == MS_Enum.RE_ENCODE:
+                self.ec = Encoder(f)
+                self.ec.start()
+                # processing
+                self._emitProcesing()
+                self.ec.wait()
+                self.filePath = self.ec.getNewFilePath()
+            self.doSplit()
 
-    def _do(self):
+    def doSplit(self):
 
         # start
         self.vidcap = cv2.VideoCapture(self.filePath)
@@ -70,13 +85,10 @@ class MovieSplitter(mThread, mFile):
             self._emitSplitting()
 
         self.count = self.COUNT
+        self.vidcap.release()
 
         # emit: DONE
         self._emitDone()
-
-    # def __del__(self):
-    #     super().__del__()
-    #     self.vidcap.release()
 
     # ---------- EMIT ----------
 
@@ -93,3 +105,15 @@ class MovieSplitter(mThread, mFile):
     def _emitDone(self):
         self.trigger.emit(f'---------- DONE ----------\n', 0)
         print(f'\n---------- DONE ----------\n')
+
+    def _emitProcesing(self):
+        _counter = 0
+        # TODO: set range in movie duration (self.seconds)
+        for _ in range(10):
+            self.trigger.emit(f'{_counter}', 1)
+            # print(f'{_counter}')
+            if self.ec.isFinished():
+                print('----------------- FIN. -----------------')
+                break
+            _counter += 1
+            time.sleep(1)
